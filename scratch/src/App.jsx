@@ -10,7 +10,8 @@ import DocumentList from './Components/DocumentList';
 import ActivityLogs from './Components/ActivityLogs';
 
 export default function App() {
-  const [user, setUser] = useState({ email: 'user@vault.local' }); // Toggle to null to test login screen
+  const [user, setUser] = useState({ email: 'user@vault.local' });
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
@@ -18,11 +19,27 @@ export default function App() {
       <header>
         <h1>Personal Digital Vault</h1>
         <p>Secure client-side storage architecture</p>
+        
         {user && (
-          <div>
-            <small>Active Session: {user.email}</small>
-            <button type="button" onClick={() => setUser(null)}>Sign Out</button>
-          </div>
+          <nav>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Vault Dashboard
+            </button>
+
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('logs')}
+            >
+              Security Audit Logs
+            </button>
+
+            <button type="button" onClick={() => setUser(null)}>
+              Sign Out
+            </button>
+          </nav>
         )}
       </header>
 
@@ -30,13 +47,20 @@ export default function App() {
         <AuthView onLoginSuccess={(u) => setUser(u)} />
       ) : (
         <>
-          <StorageStats />
-          <SearchBar onSearch={setSearchQuery} />
-          <FolderList searchQuery={searchQuery} />
-          <CredentialVault searchQuery={searchQuery} />
-          <DocumentUpload />
-          <DocumentList searchQuery={searchQuery} />
-          <ActivityLogs />
+          {activeTab === 'dashboard' && (
+            <>
+              <StorageStats />
+              <SearchBar onSearch={setSearchQuery} />
+              <FolderList searchQuery={searchQuery} />
+              <CredentialVault searchQuery={searchQuery} />
+              <DocumentUpload />
+              <DocumentList searchQuery={searchQuery} />
+            </>
+          )}
+
+          {activeTab === 'logs' && (
+            <ActivityLogs />
+          )}
         </>
       )}
     </main>
