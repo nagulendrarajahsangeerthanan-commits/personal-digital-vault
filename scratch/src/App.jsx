@@ -1,29 +1,30 @@
+import { useState } from 'react';
+import './App.css';
+import StorageStats from './Components/StorageStats';
 import FolderList from './Components/FolderList';
+import SearchBar from './Components/SearchBar';
 import CredentialVault from './Components/CredentialVault';
 import DocumentUpload from './Components/DocumentUpload';
 import DocumentList from './Components/DocumentList';
-import './App.css'
 
 export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+
   return (
-    <div>
-      <h1>Personal Digital Vault</h1>
-      <p>Secure client-side storage architecture</p>
-      <hr />
+    <main>
+      <header>
+        <h1>Personal Digital Vault</h1>
+        <p>Secure client-side storage architecture</p>
+      </header>
+
+      <StorageStats />
+
+      <SearchBar onSearch={setSearchQuery} />
       
-      <FolderList />
-
-      <hr />
-
-      <CredentialVault />
-
-      <hr />
-
+      <FolderList searchQuery={searchQuery} />
+      <CredentialVault searchQuery={searchQuery} />
       <DocumentUpload />
-
-      <hr />
-
-      <DocumentList />
-    </div>
+      <DocumentList searchQuery={searchQuery} />
+    </main>
   );
 }
