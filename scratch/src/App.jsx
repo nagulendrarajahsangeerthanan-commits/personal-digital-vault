@@ -3,21 +3,15 @@ import './App.css';
 import AuthView from './Components/AuthView';
 import StorageStats from './Components/StorageStats';
 import SearchBar from './Components/SearchBar';
-
-import StorageStats from './Components/StorageStats';
 import FolderList from './Components/FolderList';
-import SearchBar from './Components/SearchBar';
 import CredentialVault from './Components/CredentialVault';
 import DocumentUpload from './Components/DocumentUpload';
 import DocumentList from './Components/DocumentList';
-
 import ActivityLogs from './Components/ActivityLogs';
 
 export default function App() {
   const [user, setUser] = useState({ email: 'user@vault.local' });
   const [activeTab, setActiveTab] = useState('dashboard');
-
-export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
@@ -69,17 +63,6 @@ export default function App() {
           )}
         </>
       )}
-      
-      </header>
-
-      <StorageStats />
-
-      <SearchBar onSearch={setSearchQuery} />
-      
-      <FolderList searchQuery={searchQuery} />
-      <CredentialVault searchQuery={searchQuery} />
-      <DocumentUpload />
-      <DocumentList searchQuery={searchQuery} />
     </main>
   );
 }
