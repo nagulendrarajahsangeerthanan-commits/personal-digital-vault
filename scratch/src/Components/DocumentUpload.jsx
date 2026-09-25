@@ -18,10 +18,8 @@ export default function DocumentUpload() {
     <section>
       <h2>Upload Document</h2>
 
-      {/* Plain File Input */}
       <input type="file" onChange={handleFileChange} />
 
-      {/* File Select aana pin kaattum Details */}
       {selectedFile && (
         <div>
           <p>Selected File: {selectedFile.name}</p>
