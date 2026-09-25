@@ -2,6 +2,7 @@ import FolderList from './Components/FolderList';
 import CredentialVault from './Components/CredentialVault';
 import DocumentUpload from './Components/DocumentUpload';
 import DocumentList from './Components/DocumentList';
+import './App.css'
 
 export default function App() {
   return (
