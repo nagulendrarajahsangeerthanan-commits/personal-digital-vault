@@ -1,3 +1,23 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 16px 64px 16px;
+}
+
+
 header {
   text-align: center;
   margin-bottom: 28px;
@@ -12,7 +32,28 @@ header h1 {
 header p {
   color: #94a3b8;
   font-size: 14px;
+  margin: 0 0 16px 0;
 }
+
+header nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+header nav button {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+}
+
+header nav button:hover {
+  background: #1e293b;
+  border-color: #38bdf8;
+}
+
 
 section {
   background: #1e293b;
@@ -28,8 +69,25 @@ section h2 {
   margin-bottom: 14px;
 }
 
+section > button {
+background: linear-gradient(135deg, #002fff, #15ff00);
+  margin-bottom: 12px;
+}
+
+section > button:hover {
+ background: linear-gradient(135deg, #ff0000, #d400ff);
+}
+
+section div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+
 ul {
   list-style: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -45,42 +103,153 @@ li {
   border-radius: 6px;
   border: 1px solid #334155;
   font-size: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
+li span {
+  color: #38bdf8;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+
 button {
-  background: #2563eb;
-  color: WHITE;
+ background: linear-gradient(135deg, #15ff00, #2600ff);
+  color: #fcfcfc;
   border: none;
   padding: 7px 14px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 button:hover {
-  background: #291dd8;
+ background: linear-gradient(135deg, #0004ff, #25ff08);
+}
+
+li button:first-of-type {
+  background: #0257c7;
+}
+
+li button:first-of-type:hover {
+  background: #0369a1;
 }
 
 li button:last-child {
-  background: #dc2626;
+background: linear-gradient(135deg, #c70202, #000000);
   margin-left: 8px;
 }
 
-li  button:last-child:hover {
-  background: #b91c1c;
+li button:last-child:hover {
+ background: linear-gradient(135deg, #000000, #ff0000);
 }
 
-input[type="text"] {
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"] {
   width: 100%;
-  padding:  12px;
+  padding: 12px;
   border-radius: 6px;
   border: 1px dashed #475569;
   background: #0f172a;
   color: #e2e8f0;
- 
+  outline: none;
 }
+
+input:focus {
+  border: 1px solid #38bdf8;
+}
+
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+form > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+form label {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+form button[type="submit"] {
+  background: #10b981;
+  padding: 10px;
+  font-size: 14px;
+}
+
+form button[type="submit"]:hover {
+  background: #059669;
+}
+
+
+dialog {
+  border: none;
+  background: rgba(11, 17, 32, 0.85);
+  backdrop-filter: blur(6px);
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 0;
+}
+
+dialog article {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 480px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 0;
+  padding-bottom: 10px;
+}
+
+dialog header h3 {
+  margin: 0;
+  color: #38bdf8;
+  font-size: 18px;
+}
+
+dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #334155;
+  padding-top: 14px;
+}
+
 
 @media (max-width: 600px) {
   li {
@@ -89,34 +258,3 @@ input[type="text"] {
     gap: 8px;
   }
 }
-
-li span {
-  color: #38bdf8;
-  font-family: monospace;
-  font-size: 13px;
-  
-}
-
-li button:first-of-type {
-  background: #0284c7;
-}
-
-li button:first-of-type:hover {
-  background: #0369a1;
-}
-
-section > button {
-  background: #10B981;
-  margin-bottom: 12PX;
-}
-
-section > button:hover {
-  background: #059669;
-}
-
-small {
-  color: #64748B;
-  font-size: 12px;
-
-}
- 
