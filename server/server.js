@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
+import { vaultService } from './services/vaultService.js';
 
 dotenv.config();
 
@@ -11,191 +11,136 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-email']
 }));
 
 app.use(express.json());
 
-// Supabase client setup
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// Admin-Only Authorization Middleware
+const requireAdmin = (req, res, next) => {
+  const userEmail = req.headers['x-user-email'] || '';
+  const isAdmin = userEmail.includes('admin') || userEmail.startsWith('nagulendrarajah');
+  
+  if (!isAdmin) {
+    return res.status(403).json({ error: 'Access Denied: Admin clearance required.' });
+  }
+  next();
+};
 
-let supabase = null;
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
-} else {
-  console.warn('⚠️ Supabase credentials missing in server/.env');
-}
-
-// Root Route (Fixes "Cannot GET /")
+// Root Health & Discovery
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    message: 'Personal Digital Vault API Server is running securely!',
-    endpoints: [
-      '/api/health',
-      '/api/vault/stats',
-      '/api/folders',
-      '/api/documents',
-      '/api/credentials',
-      '/api/logs'
-    ]
+    architecture: 'Layered Service Model',
+    endpoints: ['/api/health', '/api/vault/stats', '/api/folders', '/api/documents', '/api/credentials', '/api/logs']
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'online', message: 'Vault Backend healthy' });
-});
+app.get('/api/health', (req, res) => res.json({ status: 'online', service: 'active' }));
 
-// Vault Stats
+// Stats Route
 app.get('/api/vault/stats', async (req, res) => {
-  if (!supabase) return res.json({ documentsCount: 0, foldersCount: 0, credentialsCount: 0 });
   try {
-    const [docsRes, foldersRes, credsRes] = await Promise.all([
-      supabase.from('documents').select('*', { count: 'exact', head: true }),
-      supabase.from('folders').select('*', { count: 'exact', head: true }),
-      supabase.from('credentials').select('*', { count: 'exact', head: true })
-    ]);
-    res.json({
-      documentsCount: docsRes.count || 0,
-      foldersCount: foldersRes.count || 0,
-      credentialsCount: credsRes.count || 0
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const stats = await vaultService.getVaultStats();
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Folders
+// Folders Routes
 app.get('/api/folders', async (req, res) => {
-  if (!supabase) return res.json([]);
   try {
-    const { data, error } = await supabase.from('folders').select('*').order('created_at', { ascending: false });
-    if (error) return res.json([]);
-    res.json(data || []);
-  } catch {
-    res.json([]);
+    const folders = await vaultService.getAllFolders();
+    res.json(folders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/folders', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Database not connected' });
   try {
     const { name, user_id } = req.body;
     if (!name) return res.status(400).json({ error: 'Folder name is required' });
-
-    const { data, error } = await supabase.from('folders').insert([{ name, user_id }]).select();
-    if (error) return res.status(500).json({ error: error.message });
-
-    await supabase.from('audit_logs').insert([{ action: 'Folder Created', target: name, user_id }]);
-    res.status(201).json(data[0]);
+    const folder = await vaultService.createFolder(name, user_id);
+    res.status(201).json(folder);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 app.delete('/api/folders/:id', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Database not connected' });
   try {
-    const { id } = req.params;
-    const { data: folder } = await supabase.from('folders').select('name').eq('id', id).single();
-    const { error } = await supabase.from('folders').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
-
-    if (folder) {
-      await supabase.from('audit_logs').insert([{ action: 'Folder Deleted', target: folder.name }]);
-    }
+    await vaultService.deleteFolder(req.params.id);
     res.json({ message: 'Folder deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Documents
+// Documents Routes (Quota Protected)
 app.get('/api/documents', async (req, res) => {
-  if (!supabase) return res.json([]);
   try {
-    const { data, error } = await supabase.from('documents').select('*').order('created_at', { ascending: false });
-    if (error) return res.json([]);
-    res.json(data || []);
-  } catch {
-    res.json([]);
-  }
-});
-
-app.post('/api/documents', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Database not connected' });
-  try {
-    const { name, size, folder_id, user_id } = req.body;
-    if (!name || !size) return res.status(400).json({ error: 'Name and size are required' });
-
-    const { data, error } = await supabase.from('documents').insert([{ name, size, folder_id: folder_id || null, user_id }]).select();
-    if (error) return res.status(500).json({ error: error.message });
-
-    await supabase.from('audit_logs').insert([{ action: 'Document Uploaded', target: name, user_id }]);
-    res.status(201).json(data[0]);
+    const docs = await vaultService.getAllDocuments();
+    res.json(docs);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/api/documents/:id', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Database not connected' });
+app.post('/api/documents', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { data: doc } = await supabase.from('documents').select('name').eq('id', id).single();
-    const { error } = await supabase.from('documents').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    const { name, size, folder_id, user_id, plan_tier } = req.body;
+    if (!name || !size) return res.status(400).json({ error: 'Name and size are required' });
+    
+    const doc = await vaultService.uploadDocument({ name, size, folder_id, user_id, plan_tier });
+    res.status(201).json(doc);
+  } catch (err) {
+    const status = err.statusCode || 500;
+    res.status(status).json({ error: err.message });
+  }
+});
 
-    if (doc) {
-      await supabase.from('audit_logs').insert([{ action: 'Document Deleted', target: doc.name }]);
-    }
+app.delete('/api/documents/:id', async (req, res) => {
+  try {
+    await vaultService.deleteDocument(req.params.id);
     res.json({ message: 'Document deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Credentials
+// Credentials Routes
 app.get('/api/credentials', async (req, res) => {
-  if (!supabase) return res.json([]);
   try {
-    const { data, error } = await supabase.from('credentials').select('*').order('created_at', { ascending: false });
-    if (error) return res.json([]);
-    res.json(data || []);
-  } catch {
-    res.json([]);
-  }
-});
-
-app.post('/api/credentials', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Database not connected' });
-  try {
-    const { label, secret, user_id } = req.body;
-    if (!label || !secret) return res.status(400).json({ error: 'Label and secret are required' });
-
-    const { data, error } = await supabase.from('credentials').insert([{ label, secret, user_id }]).select();
-    if (error) return res.status(500).json({ error: error.message });
-
-    await supabase.from('audit_logs').insert([{ action: 'Credential Saved', target: label, user_id }]);
-    res.status(201).json(data[0]);
+    const creds = await vaultService.getAllCredentials();
+    res.json(creds);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Audit Logs
-app.get('/api/logs', async (req, res) => {
-  if (!supabase) return res.json([]);
+app.post('/api/credentials', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
-    if (error) return res.json([]);
-    res.json(data || []);
-  } catch {
-    res.json([]);
+    const { label, secret, user_id } = req.body;
+    if (!label || !secret) return res.status(400).json({ error: 'Label and secret are required' });
+    const cred = await vaultService.saveCredential(label, secret, user_id);
+    res.status(201).json(cred);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.get('/api/logs', requireAdmin, async (req, res) => {
+  try {
+    const logs = await vaultService.getAuditLogs();
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Vault Backend running securely on http://localhost:${PORT}`);
+  console.log(`Vault Backend running in Service Layer Architecture on http://localhost:${PORT}`);
 });
