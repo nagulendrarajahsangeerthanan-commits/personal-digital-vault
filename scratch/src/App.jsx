@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import  { useState, useEffect, useRef } from 'react';
 import { SignedIn, SignedOut, SignIn, UserButton, useUser } from '@clerk/clerk-react';
 import './App.css';
 
@@ -12,7 +12,7 @@ export default function App() {
   const [credentials, setCredentials] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
 
-  // States
+  
   const [newFolderName, setNewFolderName] = useState('');
   const [newDocName, setNewDocName] = useState('');
   const [newDocFolder, setNewDocFolder] = useState('');
@@ -69,7 +69,7 @@ export default function App() {
     };
   }, [user]);
 
-  // Folder Create
+
   const addFolder = async (e) => {
     e.preventDefault();
     const cleanName = newFolderName.trim();
@@ -91,7 +91,7 @@ export default function App() {
     }
   };
 
-  // Document Upload
+  
   const addDocument = async (e) => {
     e.preventDefault();
     if (!newDocName.trim()) return;
@@ -121,7 +121,7 @@ export default function App() {
     }
   };
 
-  // Document Rename (BRD Scope)
+  
   const renameDocument = async (doc) => {
     const updatedName = window.prompt("Enter new document name:", doc.name);
     if (!updatedName || updatedName.trim() === doc.name) return;
@@ -131,7 +131,7 @@ export default function App() {
     );
   };
 
-  // Document Download (BRD Scope)
+  
   const handleDownload = (doc) => {
     const element = document.createElement("a");
     const file = new Blob([`Secure Encrypted Vault Payload for: ${doc.name}\nStored via Supabase Bucket`], { type: 'text/plain' });
@@ -142,7 +142,7 @@ export default function App() {
     document.body.removeChild(element);
   };
 
-  // Credential Add
+
   const addCredential = async (e) => {
     e.preventDefault();
     if (!newCredLabel.trim() || !newCredSecret.trim()) return;
@@ -169,7 +169,7 @@ export default function App() {
     }
   };
 
-  // Copy to clipboard
+  
   const copyCredentialSecret = (secret, label) => {
     navigator.clipboard.writeText(secret);
     setCopyFeedback(`Copied ${label}!`);
@@ -202,7 +202,7 @@ export default function App() {
     setPreviewDoc(null);
   };
 
-  // Filtered documents by search & selected folder
+  
   const filteredDocs = documents.filter((doc) => {
     const matchesSearch = (doc?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFolder = selectedFilterFolder === 'all' || doc.folder_id === selectedFilterFolder;
@@ -251,9 +251,9 @@ export default function App() {
 
             {activeTab === 'vault' ? (
               <>
-                {/* Stats */}
+              
                 <section className="storage-stats-card">
-                  <h2>Storage Overview (BRD Standard)</h2>
+                  <h2>Storage Overview</h2>
                   <div className="stats-grid">
                     <div>
                       <span className="stats-label">Stored Documents</span>
@@ -270,7 +270,7 @@ export default function App() {
                   </div>
                 </section>
 
-                {/* Search & Folder Filter Bar */}
+                
                 <section className="search-filter-section" style={{ display: 'flex', gap: '12px' }}>
                   <input
                     type="search"
@@ -291,7 +291,7 @@ export default function App() {
                   </select>
                 </section>
 
-                {/* 1. Folders */}
+            
                 <section className="folders-section">
                   <h2>Folder Management</h2>
                   <form onSubmit={addFolder} className="add-folder-form">
@@ -317,7 +317,7 @@ export default function App() {
                   </ul>
                 </section>
 
-                {/* 2. Documents */}
+              
                 <section className="documents-section">
                   <h2>Store & Upload Document</h2>
                   <form onSubmit={addDocument} className="add-folder-form" style={{ marginBottom: '20px' }}>
@@ -352,7 +352,7 @@ export default function App() {
                         <th>Document Name</th>
                         <th>Size</th>
                         <th>Upload Date</th>
-                        <th>Actions (BRD Scope)</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -381,7 +381,7 @@ export default function App() {
                   </table>
                 </section>
 
-                {/* 3. Credentials */}
+            
                 <section className="credentials-section">
                   <h2>Confidential Credentials</h2>
                   <form onSubmit={addCredential} className="add-folder-form" style={{ marginBottom: '16px' }}>
@@ -447,7 +447,7 @@ export default function App() {
             )}
           </main>
 
-          {/* Modal Preview */}
+        
           <dialog ref={modalRef} className="preview-dialog">
             <header>
               <h3>Document Preview</h3>
