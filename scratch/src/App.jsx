@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   SignedIn, 
   SignedOut, 
@@ -11,6 +11,7 @@ import './App.css';
 
 // Master Administrator Email
 const MASTER_ADMIN_EMAIL = 'nagulendrarajahsangeerthanan@gmail.com';
+const API_BASE = 'http://localhost:5000/api';
 
 export default function App() {
   const { user } = useUser();
@@ -37,13 +38,48 @@ export default function App() {
   // Navigation Tabs: 'dashboard' | 'credentials' | 'audit' | 'subscription' | 'team'
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Folders State with Owner Information
-  const [folders, setFolders] = useState([
-    { id: 1, name: 'keerthu_personal', owner: 'keerthu@vaultuser.com' },
-    { id: 2, name: 'my passport', owner: MASTER_ADMIN_EMAIL.toLowerCase() },
-    { id: 3, name: 'finance_audit', owner: 'staff@digitalvault.io' }
-  ]);
+  // Folders State with localStorage cache & Database Synchronization
+  const [folders, setFolders] = useState(() => {
+    try {
+      const cached = localStorage.getItem('vault_folders_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse cached folders:', e);
+    }
+    return [
+      { id: '1', name: 'keerthu_personal', owner: 'keerthu@vaultuser.com' },
+      { id: '2', name: 'my passport', owner: MASTER_ADMIN_EMAIL.toLowerCase() },
+      { id: '3', name: 'finance_audit', owner: 'staff@digitalvault.io' }
+    ];
+  });
   const [newFolderName, setNewFolderName] = useState('');
+
+  // Synchronize folders from backend Supabase database
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/folders`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const mapped = data.map(f => ({
+              id: f.id,
+              name: f.name,
+              owner: f.user_id || 'System'
+            }));
+            setFolders(mapped);
+            localStorage.setItem('vault_folders_cache', JSON.stringify(mapped));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load folders from database, using cached:', err);
+      }
+    };
+    fetchFolders();
+  }, []);
 
   // Documents State with Actual File Data / Blob for Downloads
   const [documents, setDocuments] = useState([
@@ -130,26 +166,90 @@ export default function App() {
   };
 
   // Folder Actions
-  const handleCreateFolder = (e) => {
+  const handleCreateFolder = async (e) => {
     e.preventDefault();
     if (currentRole === 'user') {
       alert('Security Policy: Standard users cannot create categories.');
       return;
     }
-    if (!newFolderName.trim()) return;
-    const exists = folders.some(f => f.name.toLowerCase() === newFolderName.trim().toLowerCase());
-    if (!exists) {
-      setFolders([...folders, { id: Date.now(), name: newFolderName.trim(), owner: userEmail }]);
+    const trimmed = newFolderName.trim();
+    if (!trimmed) return;
+    const exists = folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      alert('A category with this name already exists.');
+      return;
     }
-    setNewFolderName('');
+
+    try {
+      const res = await fetch(`${API_BASE}/folders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: trimmed,
+          user_id: userEmail || 'system'
+        })
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        const newFolderObj = {
+          id: created.id,
+          name: created.name,
+          owner: created.user_id || userEmail
+        };
+        setFolders(prev => {
+          const updated = [newFolderObj, ...prev.filter(f => f.id !== created.id)];
+          localStorage.setItem('vault_folders_cache', JSON.stringify(updated));
+          return updated;
+        });
+        setNewFolderName('');
+        alert(`Folder "${created.name}" created and saved to database!`);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Failed to save folder to database: ${errData.error || res.statusText}`);
+      }
+    } catch (err) {
+      console.error('Error saving folder to backend:', err);
+      // Fallback local save if offline
+      const localObj = { id: Date.now().toString(), name: trimmed, owner: userEmail };
+      setFolders(prev => {
+        const updated = [localObj, ...prev];
+        localStorage.setItem('vault_folders_cache', JSON.stringify(updated));
+        return updated;
+      });
+      setNewFolderName('');
+      alert(`Folder "${trimmed}" saved locally (Backend offline).`);
+    }
   };
 
-  const handleDeleteFolder = (id) => {
+  const handleDeleteFolder = async (id) => {
     if (currentRole !== 'admin') {
       alert('Unauthorized: Only Administrators can permanently remove categories.');
       return;
     }
-    setFolders(folders.filter(f => f.id !== id));
+
+    try {
+      const res = await fetch(`${API_BASE}/folders/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setFolders(prev => {
+          const updated = prev.filter(f => f.id !== id);
+          localStorage.setItem('vault_folders_cache', JSON.stringify(updated));
+          return updated;
+        });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Failed to delete folder: ${errData.error || res.statusText}`);
+      }
+    } catch (err) {
+      console.error('Error deleting folder:', err);
+      setFolders(prev => {
+        const updated = prev.filter(f => f.id !== id);
+        localStorage.setItem('vault_folders_cache', JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
 
   // Real PC File Upload Handler
@@ -278,7 +378,7 @@ export default function App() {
   // Role-based visibility filtering
   const accessibleFolders = (currentRole === 'admin' || currentRole === 'staff')
     ? folders
-    : folders.filter(f => f.owner === userEmail);
+    : folders.filter(f => !f.owner || f.owner.toLowerCase() === userEmail.toLowerCase() || f.owner === 'System');
 
   const accessibleDocs = (currentRole === 'admin' || currentRole === 'staff')
     ? documents
@@ -521,7 +621,7 @@ export default function App() {
                         <span>📁 {folder.name}</span>
                         {currentRole === 'admin' && (
                           <span style={{ fontSize: '0.7rem', color: '#38bdf8', opacity: 0.8 }}>
-                            ({folder.owner.split('@')[0]})
+                            ({folder.owner ? folder.owner.split('@')[0] : 'user'})
                           </span>
                         )}
                         {currentRole === 'admin' && (
