@@ -112,3 +112,9 @@
   font-size: 0.75rem !important;
   color: #94a3b8 !important;
 }
+
+@media screen and (max-width: 768px) {
+  .sidebar {
+    display: none !important;
+  }
+}
