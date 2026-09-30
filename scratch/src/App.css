@@ -300,18 +300,32 @@ button:hover {
 }
 
 
-@media screen and (max-width: 768px) {
-  .app-container {
+/* Mobile Screen Only (Desktop maaraadhu) */
+@media screen and (max-width: 850px) {
+  .app-layout,
+  .app-container,
+  .dashboard-container {
     display: flex !important;
     flex-direction: column !important;
-    width: 100% !important;
+    width: 100vw !important;
+    min-width: 100% !important;
+    overflow-x: hidden !important;
   }
 
-  .content-area,
-  main {
+  main,
+  .main-content,
+  .content-area {
     width: 100% !important;
-    max-width: 100vw !important;
+    min-width: 100% !important;
+    margin-left: 0 !important;
     padding: 12px !important;
     box-sizing: border-box !important;
+  }
+
+  /* 3 Cards Mobile-il neat vertical aaga maarum */
+  .stats-grid,
+  .overview-grid,
+  .cards-grid {
+    grid-template-columns: 1fr !important;
   }
 }
