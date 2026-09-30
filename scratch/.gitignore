@@ -1,9 +1,8 @@
 node_modules/
-**/node_modules/
+*/node_modules/
 server/node_modules/
 scratch/node_modules/
 .env
 .env.local
-server/.env
 dist/
 build/
