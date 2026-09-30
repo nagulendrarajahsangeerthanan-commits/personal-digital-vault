@@ -112,3 +112,15 @@
   font-size: 0.75rem !important;
   color: #94a3b8 !important;
 }
+
+/* Mobile Screen Only - Hides all possible sidebar wrappers */
+@media screen and (max-width: 850px) {
+  aside,
+  nav,
+  .sidebar,
+  .sidebar-container,
+  .vault-sidebar,
+  [class*="sidebar"] {
+    display: none !important;
+  }
+}
